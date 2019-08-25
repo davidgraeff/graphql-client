@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## Changes
+
+- Update syn and quote dependencies to stable release versions (>= 1.0)
+- The CLI shorthand fix (using "-out" ) of release 0.7.1 is not working anymore.
+  Remove the shorthand for --selected-operation altogether and "-o" for "--output".
+
+## Fixes
+
+- Catch more cases where a rust keyword in schemas or queries would break code generation
+
 ## 0.8.0 - 2019-05-24
 
 ## Changed
