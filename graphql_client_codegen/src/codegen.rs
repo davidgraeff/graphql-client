@@ -41,8 +41,11 @@ pub(crate) fn response_for_query(
 ) -> Result<TokenStream, failure::Error> {
     let mut context = QueryContext::new(schema, options.deprecation_strategy());
 
-    if let Some(derives) = options.additional_derives() {
-        context.ingest_additional_derives(&derives)?;
+    if let Some(derives) = options.response_derives() {
+        context.ingest_response_derives(&derives)?;
+    }
+    if let Some(derives) = options.input_derives() {
+        context.ingest_input_derives(&derives)?;
     }
 
     let mut definitions = Vec::new();

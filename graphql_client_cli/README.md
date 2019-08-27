@@ -42,9 +42,12 @@ FLAGS:
     -V, --version          Prints version information
 
 OPTIONS:
-    -a, --additional-derives <additional_derives>
-            Additional derives that will be added to the generated structs and enums for the response and the variables.
+    -a, --additional-derives <input_derives>
+            Additional derives that will be added to the generated structs and enums for the variables.
             --additional-derives='Serialize,PartialEq'
+    -r, --response-derives <response_derives>
+            Additional derives that will be added to the generated structs and enums for the response.
+            --response-derives='Debug'
     -d, --deprecation-strategy <deprecation_strategy>
             You can choose deprecation strategy from allow, deny, or warn. Default value is warn.
 

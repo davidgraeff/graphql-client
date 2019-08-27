@@ -41,7 +41,11 @@ enum Cli {
         /// Additional derives that will be added to the generated structs and enums for the response and the variables.
         /// --additional-derives='Serialize,PartialEq'
         #[structopt(short = "a", long = "additional-derives")]
-        additional_derives: Option<String>,
+        input_derives: Option<String>,
+        /// Additional response derives that will be added to the generated structs and enums for the response.
+        /// --response-derives='Debug'
+        #[structopt(short = "r", long = "response-derives")]
+        response_derives: Option<String>,
         /// You can choose deprecation strategy from allow, deny, or warn.
         /// Default value is warn.
         #[structopt(short = "d", long = "deprecation-strategy")]
@@ -76,7 +80,8 @@ fn main() -> Result<(), failure::Error> {
             headers,
         } => introspect_schema::introspect_schema(&schema_location, output, authorization, headers),
         Cli::Generate {
-            additional_derives,
+            input_derives,
+            response_derives,
             deprecation_strategy,
             module_visibility,
             no_formatting,
@@ -85,7 +90,8 @@ fn main() -> Result<(), failure::Error> {
             schema_path,
             selected_operation,
         } => generate::generate_code(generate::CliCodegenParams {
-            additional_derives,
+            input_derives,
+            response_derives,
             deprecation_strategy,
             module_visibility,
             no_formatting,
