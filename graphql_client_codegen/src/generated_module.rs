@@ -74,9 +74,16 @@ impl<'a> GeneratedModule<'a> {
                 #impls
             }
 
+            impl graphql_client::GraphQLResponse for #operation_name_ident {
+                type ResponseData = #module_name::ResponseData;
+
+                fn to_response(text:&str) -> serde_json::Result<::graphql_client::Response<Self::ResponseData>> {
+                    serde_json::from_str(text)
+                }
+            }
+
             impl graphql_client::GraphQLQuery for #operation_name_ident {
                 type Variables = #variables_type;
-                type ResponseData = #module_name::ResponseData;
 
                 fn build_query(variables: Self::Variables) -> ::graphql_client::QueryBody<Self::Variables> {
                     graphql_client::QueryBody {
@@ -84,7 +91,6 @@ impl<'a> GeneratedModule<'a> {
                         query: #module_name::QUERY,
                         operation_name: #module_name::OPERATION_NAME,
                     }
-
                 }
             }
         ))

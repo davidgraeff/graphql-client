@@ -65,14 +65,23 @@ doc_comment::doctest!("../../README.md");
 ///     Ok(())
 /// }
 /// ```
-pub trait GraphQLQuery {
+pub trait GraphQLQuery: GraphQLResponse {
     /// The shape of the variables expected by the query. This should be a generated struct most of the time.
     type Variables: serde::Serialize;
-    /// The top-level shape of the response data (the `data` field in the GraphQL response). In practice this should be generated, since it is hard to write by hand without error.
-    type ResponseData: for<'de> serde::Deserialize<'de>;
 
     /// Produce a GraphQL query struct that can be JSON serialized and sent to a GraphQL API.
     fn build_query(variables: Self::Variables) -> QueryBody<Self::Variables>;
+}
+
+/// Generally you want to use GraphQLQuery which extends this trait.
+///
+/// This trait defines the response type
+pub trait GraphQLResponse {
+    /// The top-level shape of the response data (the `data` field in the GraphQL response). In practice this should be generated, since it is hard to write by hand without error.
+    type ResponseData: for<'de> serde::Deserialize<'de>;
+
+    /// Parses a received json formatted response
+    fn to_response(text:&str) -> Result<Response<Self::ResponseData>,serde_json::Error>;
 }
 
 /// The form in which queries are sent over HTTP in most implementations. This will be built using the [`GraphQLQuery`] trait normally.
