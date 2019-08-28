@@ -44,25 +44,60 @@ impl<'a> GeneratedModule<'a> {
             .unwrap_or_else(|| quote! {});
 
         let query_string = &self.query_string;
-        let impls = self.build_impls()?;
+        let mut impls = self.build_impls()?;
 
-        let struct_declaration = match self.options.mode {
-            CodegenMode::Cli => quote!(#module_visibility struct #operation_name_ident;),
-            // The struct is already present in derive mode.
-            CodegenMode::Derive => quote!(),
-        };
+        let build_query_impl = match self.options.mode {
+            CodegenMode::Cli => {
+                let context = crate::query::QueryContext::new(&self.schema, self.options.deprecation_strategy());
+                let (variables_derives, variables, _) = self.operation.expand_variables(&context);
+                impls = quote!(
+                    #impls
 
-        let variables_type = match self.operation.variables.len() {
-            0 => quote!(()),
-            _ => quote!(
-            #module_name::Variables
-            ),
+                    #[allow(dead_code)]
+                    #variables_derives
+                    pub struct #operation_name_ident {
+                        #(#variables,)*
+                    }
+                    impl graphql_client::GraphQLQueryCLI for #operation_name_ident {
+                        type ResponseData = ResponseData;
+
+                        fn into_query_body(self) -> ::graphql_client::QueryBody<Self> {
+                            graphql_client::QueryBody {
+                                variables: self,
+                                query: QUERY,
+                                operation_name: OPERATION_NAME,
+                            }
+                        }
+                    }
+                );
+                // No build_query_impl for CLI
+                quote!()
+            }
+            CodegenMode::Derive => {
+                let variables_type = match self.operation.variables.len() {
+                    0 => quote!(()),
+                    _ => quote!(
+                    #module_name::Variables
+                )
+                };
+                quote!(
+                    impl graphql_client::GraphQLQuery for #operation_name_ident {
+                        type Variables = #variables_type;
+                        type ResponseData = #module_name::ResponseData;
+
+                        fn build_query(variables: Self::Variables) -> ::graphql_client::QueryBody<Self::Variables> {
+                            graphql_client::QueryBody {
+                                variables,
+                                query: #module_name::QUERY,
+                                operation_name: #module_name::OPERATION_NAME,
+                            }
+                        }
+                    }
+                )
+            }
         };
 
         Ok(quote!(
-            #[allow(dead_code)]
-            #struct_declaration
-
             #module_visibility mod #module_name {
                 #![allow(dead_code)]
 
@@ -74,19 +109,7 @@ impl<'a> GeneratedModule<'a> {
                 #impls
             }
 
-            impl graphql_client::GraphQLQuery for #operation_name_ident {
-                type Variables = #variables_type;
-                type ResponseData = #module_name::ResponseData;
-
-                fn build_query(variables: Self::Variables) -> ::graphql_client::QueryBody<Self::Variables> {
-                    graphql_client::QueryBody {
-                        variables,
-                        query: #module_name::QUERY,
-                        operation_name: #module_name::OPERATION_NAME,
-                    }
-
-                }
-            }
+            #build_query_impl
         ))
     }
 }

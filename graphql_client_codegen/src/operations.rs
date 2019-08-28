@@ -42,16 +42,9 @@ impl<'query> Operation<'query> {
         }
     }
 
-    /// Generate the Variables struct and all the necessary supporting code.
-    pub(crate) fn expand_variables(&self, context: &QueryContext<'_, '_>) -> TokenStream {
-        let variables = &self.variables;
-        let variables_derives = context.variables_derives();
-
-        if variables.is_empty() {
-            return quote! {};
-        }
-
-        let fields = variables.iter().map(|variable| {
+    /// Generate the Variables structs fields. Used by expand_variables.
+    pub(crate) fn variable_fields(&self, context: &QueryContext<'_, '_>) -> Vec<TokenStream> {
+        self.variables.iter().map(|variable| {
             let ty = variable.ty.to_rust(context, "");
             let rust_safe_field_name =
                 crate::shared::keyword_replace(&variable.name.to_snake_case());
@@ -67,22 +60,33 @@ impl<'query> Operation<'query> {
             }
 
             quote!(#rename pub #name: #ty)
-        });
+        }).collect()
+    }
+
+    /// mark types of variables of this operation as required
+    pub(crate) fn compute_variable_requirements(&self, context: &QueryContext<'_, '_>) {
+        for variable in &self.variables {
+            context.schema.require(&variable.ty.inner_name_str());
+        }
+    }
+
+    /// Generate the Variables struct and all the necessary supporting code.
+    pub(crate) fn expand_variables(&self, context: &QueryContext<'_, '_>) -> (TokenStream, Vec<TokenStream>, Vec<TokenStream>) {
+        let variables = &self.variables;
+
+        let variables_derives = context.variables_derives();
+
+        if variables.is_empty() {
+            return (variables_derives, vec![], vec![]);
+        }
+
+        let fields = self.variable_fields(context);
 
         let default_constructors = variables
             .iter()
-            .map(|variable| variable.generate_default_value_constructor(context));
+            .map(|variable| variable.generate_default_value_constructor(context)).collect();
 
-        quote! {
-            #variables_derives
-            pub struct Variables {
-                #(#fields,)*
-            }
-
-            impl Variables {
-                #(#default_constructors)*
-            }
-        }
+        (variables_derives, fields, default_constructors)
     }
 }
 

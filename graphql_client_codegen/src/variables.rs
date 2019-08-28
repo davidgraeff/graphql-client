@@ -17,7 +17,6 @@ impl<'query> Variable<'query> {
         &self,
         context: &QueryContext<'_, '_>,
     ) -> TokenStream {
-        context.schema.require(&self.ty.inner_name_str());
         match &self.default {
             Some(default) => {
                 let fn_name = Ident::new(&format!("default_{}", self.name), Span::call_site());

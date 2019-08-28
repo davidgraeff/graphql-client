@@ -75,6 +75,47 @@ pub trait GraphQLQuery {
     fn build_query(variables: Self::Variables) -> QueryBody<Self::Variables>;
 }
 
+/// For generated (CLI) code in contrast to the derive variant it simplifies the API surface a lot,
+/// by embedding input variables into  query structs, instead of having a separate variables container.
+///
+/// Example:
+///
+/// ```
+/// use graphql_client::*;
+/// use serde_json::json;
+///
+/// use mymodule::StarWarsQuery;
+///
+/// fn main() -> Result<(), failure::Error> {
+///     use graphql_client::GraphQLQuery;
+///
+///     let query = star_wars_query::StarWarsQuery {
+///         episode_for_hero: star_wars_query::Episode::NEWHOPE,
+///     }.into_query_body();
+///
+///     let actual_body = serde_json::to_value(query)?;
+///
+///     assert_eq!(actual_body, json!({
+///         "operationName": star_wars_query::OPERATION_NAME,
+///         "query": star_wars_query::QUERY,
+///         "variables": {
+///             "episodeForHero": "NEWHOPE"
+///         },
+///     }));
+///
+///     Ok(())
+/// }
+/// ```
+pub trait GraphQLQueryCLI
+    where Self: std::marker::Sized+serde::Serialize {
+    /// The top-level shape of the response data (the `data` field in the GraphQL response). In practice this should be generated, since it is hard to write by hand without error.
+    type ResponseData: for<'de> serde::Deserialize<'de>;
+
+    /// Produce a GraphQL query struct that can be JSON serialized and sent to a GraphQL API.
+    /// This query object will be consumed.
+    fn into_query_body(self) -> QueryBody<Self>;
+}
+
 /// The form in which queries are sent over HTTP in most implementations. This will be built using the [`GraphQLQuery`] trait normally.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryBody<Variables>

@@ -143,6 +143,7 @@ impl<'schema> GqlInput<'schema> {
         // This works in tandem with renamed struct Variables field types, eg: pub struct Variables { pub criteria : crate_ , }
         let rust_safe_field_name = crate::shared::keyword_replace(&self.name);
         let name = Ident::new(&rust_safe_field_name, Span::call_site());
+
         Ok(quote! {
             #variables_derives
             pub struct #name {

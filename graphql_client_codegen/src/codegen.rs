@@ -1,7 +1,7 @@
 use crate::fragments::GqlFragment;
 use crate::operations::Operation;
 use crate::query::QueryContext;
-use crate::schema;
+use crate::{schema, CodegenMode};
 use crate::selection::Selection;
 use failure::*;
 use graphql_parser::query;
@@ -119,7 +119,28 @@ pub(crate) fn response_for_query(
         })
         .collect();
     let fragment_definitions = fragment_definitions?;
-    let variables_struct = operation.expand_variables(&context);
+
+    operation.compute_variable_requirements(&context);
+
+    let variables_struct = match options.mode {
+        CodegenMode::Derive => {
+            let (variables_derives, fields, default_constructors) = operation.expand_variables(&context);
+            quote! (
+                #variables_derives
+                pub struct Variables {
+                    #(#fields,)*
+                }
+
+                impl Variables {
+                    #(#default_constructors)*
+                }
+            )
+        },
+        CodegenMode::Cli => {
+            quote!(
+            )
+        }
+    };
 
     let input_object_definitions: Result<Vec<TokenStream>, _> = context
         .schema

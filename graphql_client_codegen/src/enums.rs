@@ -61,6 +61,7 @@ impl<'schema> GqlEnum<'schema> {
 
         quote! {
             #derives
+            #[allow(non_camel_case_types)]
             pub enum #name {
                 #(#variant_names,)*
                 Other(String),
